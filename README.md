@@ -130,3 +130,13 @@ To adapt the Link UI to the user's device settings, use:
 - **`theme`** — e.g. `ThemeMode.system` to follow device light/dark mode (sent as `th` in the link URL).
 
 These map to the same Link URL parameters (`lng`,`th`) as the [Web SDK](https://docs.meshconnect.com/guides/web-sdk).
+
+## Contributing
+
+After cloning the repo, run the hook installer once to enable the pre-push formatting check:
+
+```bash
+bash tools/install-hooks.sh
+```
+
+This configures git to use the `.githooks` directory. On every `git push`, the hook runs `dart format` on the Dart files in your commits. If any file was reformatted, the push is aborted — stage the formatted changes and push again.

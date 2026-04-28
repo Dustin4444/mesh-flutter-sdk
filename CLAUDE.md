@@ -25,8 +25,8 @@ The client never touches the link token's internals — it's opaque to them. All
 ## How to run locally
 
 ```bash
-# Install dependencies
-flutter pub get
+# First-time setup: install dependencies + git hooks
+bash tools/setup.sh
 
 # Run tests
 flutter test
