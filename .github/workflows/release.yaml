@@ -147,8 +147,26 @@ jobs:
       - name: Run tests ⚛️
         run: flutter test --coverage
 
+  # pub.dev OIDC trusted publishing requires the workflow to originate from a tag ref, not a branch ref.
+  # This job creates and pushes the tag before publish runs so the OIDC token carries refType=tag.
+  create-tag:
+    needs: [check-version, ci]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout 🎾
+        uses: actions/checkout@v6
+
+      - name: Create and push git tag 🏷️
+        run: |
+          VERSION="${{ needs.check-version.outputs.version }}"
+          git tag "$VERSION"
+          git push origin "$VERSION"
+
   publish:
-    needs: ci
+    needs: [check-version, create-tag]
     permissions:
       id-token: write
     uses: dart-lang/setup-dart/.github/workflows/publish.yml@e51d8e571e22473a2ddebf0ef8a2123f0ab2c02c
