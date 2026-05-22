@@ -1,11 +1,12 @@
-# Triggered by a tag push from release.yaml. Because this workflow runs with refType=tag,
-# the OIDC token satisfies pub.dev's trusted publishing requirement.
+# This workflow run when new tag is pushed. It validates the tag, publishes to pub.dev,
+# then creates a GitHub release with changelog notes and announces it in Slack.
 name: Publish
 
 on:
   push:
     tags:
       - '[0-9]*.[0-9]*.[0-9]*'
+  workflow_dispatch:    
 
 jobs:
   validate-tag:

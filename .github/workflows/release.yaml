@@ -1,5 +1,5 @@
-# Runs on pushes to main. Validates the version bump, runs CI, then creates and pushes the git tag.
-# Pushing the tag triggers publish.yaml, which runs with refType=tag — required by pub.dev OIDC trusted publishing.
+# This workflow automates the release process, it checks for a new version,
+# runs CI checks, creates a git tag, and then triggers the publish workflow.
 name: Release
 
 on:
