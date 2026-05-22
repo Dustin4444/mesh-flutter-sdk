@@ -1,0 +1,102 @@
+# Triggered by a tag push from release.yaml. Because this workflow runs with refType=tag,
+# the OIDC token satisfies pub.dev's trusted publishing requirement.
+name: Publish
+
+on:
+  push:
+    tags:
+      - '[0-9]+.[0-9]+.[0-9]+'
+
+jobs:
+  publish:
+    permissions:
+      id-token: write
+    uses: dart-lang/setup-dart/.github/workflows/publish.yml@e51d8e571e22473a2ddebf0ef8a2123f0ab2c02c
+    with:
+      environment: pub.dev
+
+  release:
+    needs: publish
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout 🎾
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Compute release metadata 📊
+        id: meta
+        run: |
+          VERSION="${{ github.ref_name }}"
+          PREV_TAG=$(git tag --sort=-v:refname | grep -v "^${VERSION}$" | head -n 1)
+
+          if [[ -z "$PREV_TAG" ]]; then
+            MESSAGE=":package: Release (no previous semver tag)"
+          else
+            IFS='.' read -r L_MAJOR L_MINOR L_PATCH <<< "$VERSION"
+            IFS='.' read -r P_MAJOR P_MINOR P_PATCH <<< "$PREV_TAG"
+
+            if [[ "$L_MAJOR" -gt "$P_MAJOR" ]]; then
+              MESSAGE=":exclamation: Major (breaking change)"
+            elif [[ "$L_MINOR" -gt "$P_MINOR" ]]; then
+              MESSAGE=":yo-yo: Minor (new feature)"
+            else
+              MESSAGE=":broom: Patch (bugfix or improvement)"
+            fi
+          fi
+
+          echo "previous_tag=$PREV_TAG" >> "$GITHUB_OUTPUT"
+          {
+            echo "bump_message<<EOF"
+            echo "$MESSAGE"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Create GitHub Release 🚀
+        id: create_release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION="${{ github.ref_name }}"
+          PREV_TAG="${{ steps.meta.outputs.previous_tag }}"
+
+          CHANGELOG_SECTION=$(awk -v version="$VERSION" '$0 == "## " version {found=1; next} found && /^## /{exit} found{print}' CHANGELOG.md)
+
+          cat > /tmp/release_notes.md << EOF
+          ## What's Changed
+
+          ${CHANGELOG_SECTION}
+
+          **Full Changelog**: https://github.com/${{ github.repository }}/compare/${PREV_TAG}...${VERSION}
+          EOF
+
+          gh release create "$VERSION" \
+            --title "$VERSION" \
+            --notes-file /tmp/release_notes.md
+
+          echo "release_url=https://github.com/${{ github.repository }}/releases/tag/${VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Send release announcement to Slack 📣
+        uses: slackapi/slack-github-action@91efab103c0de0a537f72a35f6b8cda0ee76bf0a
+        with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          payload: |
+            blocks:
+              - type: "header"
+                text:
+                  type: "plain_text"
+                  text: ":flutter: Flutter SDK Release: ${{ github.ref_name }}"
+                  emoji: true
+              - type: "section"
+                text:
+                  type: "mrkdwn"
+                  text: "${{ steps.meta.outputs.bump_message }}"
+              - type: "section"
+                text:
+                  type: "mrkdwn"
+                  text: "<!subteam^S091246FEDR> view release on <${{ steps.create_release.outputs.release_url }}|${{ github.repository }}>"
