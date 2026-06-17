@@ -40,6 +40,21 @@ void main() {
         ),
         isTrue,
       );
+      expect(isExternallyOpenedOrigin('https://i.bybit.com/1TYabIso'), isTrue);
+      expect(
+        isExternallyOpenedOrigin('https://krak.app/request/abc123'),
+        isTrue,
+      );
+      expect(
+        isExternallyOpenedOrigin(
+          'https://js.crypto.com/sdk/payments/checkout/set_wallet?id=abc',
+        ),
+        isTrue,
+      );
+      expect(
+        isExternallyOpenedOrigin('https://cash.app/launch/abc123'),
+        isTrue,
+      );
     });
 
     test('Returns false for about:blank', () {
@@ -51,6 +66,34 @@ void main() {
       expect(isExternallyOpenedOrigin('http://meshconnect.com'), isFalse);
       expect(isExternallyOpenedOrigin('ftp://getfront.com'), isFalse);
       expect(isExternallyOpenedOrigin('meshconnect://'), isFalse);
+    });
+
+    test('Returns false for lookalike domains (host-prefix attack)', () {
+      expect(
+        isExternallyOpenedOrigin('https://i.bybit.com.evil.com/path'),
+        isFalse,
+      );
+      expect(
+        isExternallyOpenedOrigin('https://cash.app.evil.com/launch/abc'),
+        isFalse,
+      );
+      expect(
+        isExternallyOpenedOrigin('https://link.trustwallet.com.evil.com/wc'),
+        isFalse,
+      );
+    });
+
+    test('Returns false for lookalike paths (path-prefix attack)', () {
+      expect(
+        isExternallyOpenedOrigin(
+          'https://sandbox.meshconnect.com/authorize/CoinbaseEvil',
+        ),
+        isFalse,
+      );
+      expect(
+        isExternallyOpenedOrigin('https://go.rabby.io/mobileEvil/path'),
+        isFalse,
+      );
     });
 
     group('OAuth redirect regex', () {

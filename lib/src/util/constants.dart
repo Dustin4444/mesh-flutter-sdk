@@ -34,15 +34,40 @@ bool isExternallyOpenedOrigin(String url) {
       return true;
     }
 
+    final urlUri = Uri.tryParse(url);
+    if (urlUri == null) {
+      return false;
+    }
+
     for (final origin in _externallyOpenedOrigins) {
-      if (origin.startsWith('https://')) {
-        // Full URL, e.g. "https://link.trustwallet.com"
-        if (url.startsWith(origin)) {
-          return true;
-        }
-      } else {
+      final originUri = Uri.tryParse(origin);
+      if (originUri == null) {
         logger.severe('Invalid externally opened origin format: $origin');
+        continue;
       }
+
+      // Compare scheme and host exactly to prevent lookalike attacks
+      // (e.g. https://i.bybit.com.evil.com matching https://i.bybit.com).
+      if (urlUri.scheme != originUri.scheme || urlUri.host != originUri.host) {
+        continue;
+      }
+
+      // If the origin specifies a path, the URL path must match it exactly or
+      // be nested under it (segment boundary) to prevent path-prefix lookalikes
+      // e.g. /authorize/CoinbaseEvil matching /authorize/Coinbase.
+      final originPath = originUri.path;
+      if (originPath.isNotEmpty && originPath != '/') {
+        final urlPath = urlUri.path;
+        final normalizedOriginPath = originPath.endsWith('/')
+            ? originPath
+            : '$originPath/';
+        if (urlPath != originPath &&
+            !urlPath.startsWith(normalizedOriginPath)) {
+          continue;
+        }
+      }
+
+      return true;
     }
 
     return false;
@@ -113,6 +138,10 @@ const _externallyOpenedOrigins = [
   'https://sandbox.meshconnect.com/authorize/Coinbase', // Coinbase on Sandbox
   'https://appopener.meshconnect.com',
   'https://api.cb-device-intelligence.com',
+  'https://i.bybit.com',           // Bybit Pay
+  'https://krak.app',              // Kraken Pay
+  'https://js.crypto.com',         // Crypto.com Pay
+  'https://cash.app',              // Cash App Pay
 ];
 // dart format on
 
@@ -144,4 +173,9 @@ const allowedNativeSchemes = {
   'phantom',
   'trust',
   'metamask',
+  // Hosted-QR deposit / pay flows
+  'bybit',
+  'cryptocom',
+  'krakenpay',
+  'cashapp',
 };

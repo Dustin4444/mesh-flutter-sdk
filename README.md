@@ -118,9 +118,43 @@ Here's what you can configure in the `MeshConfiguration`:
 ### Whitelist
 
 See the full list of whitelisted
-origins [here](https://github.com/FrontFin/mesh-flutter-sdk/blob/main/lib/src/util/constants.dart#L37).
+origins [here](https://github.com/FrontFin/mesh-flutter-sdk/blob/main/lib/src/util/constants.dart).
 
 To disable the whitelist check, set `isDomainWhitelistEnabled: false` in the `MeshConfiguration`.
+
+### Platform setup
+
+#### iOS
+
+Add the following URL schemes to `LSApplicationQueriesSchemes` in your app's `Info.plist`. This is required for `url_launcher` to open wallet and partner-app deep links on iOS:
+
+```xml
+<key>LSApplicationQueriesSchemes</key>
+<array>
+    <string>tronlinkoutside</string>
+    <string>bitcoin</string>
+    <string>zengo</string>
+    <string>okx</string>
+    <string>uniswap</string>
+    <string>rainbow</string>
+    <string>bitkeep</string>
+    <string>ledgerlive</string>
+    <string>dfw</string>
+    <string>exodus</string>
+    <string>cbwallet</string>
+    <string>bnc</string>
+    <string>phantom</string>
+    <string>trust</string>
+    <string>metamask</string>
+    <string>bybit</string>
+    <string>cryptocom</string>
+    <string>krakenpay</string>
+    <string>cashapp</string>
+    <string>itms-apps</string>
+</array>
+```
+
+Without these entries, `canOpenURL` returns `false` for the corresponding schemes and the SDK will silently fail to open the partner app on iOS.
 
 ### System language and theme
 
