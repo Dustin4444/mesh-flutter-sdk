@@ -23,9 +23,15 @@ void main() {
       test('parses TransferStartedEvent', () {
         final event = MeshEvent.fromJson({
           'type': 'transferStarted',
-          'payload': <String, dynamic>{},
+          'payload': {
+            'integrationName': 'Coinbase',
+            'integrationType': 'exchange',
+          },
         });
         expect(event, isA<TransferStartedEvent>());
+        final started = event! as TransferStartedEvent;
+        expect(started.integrationName, 'Coinbase');
+        expect(started.integrationType, 'exchange');
       });
 
       test('parses VerifyDonePageEvent', () {
@@ -402,9 +408,6 @@ void main() {
         });
 
         expect(event, isA<IntegrationMfaEnteredEvent>());
-        expect((event! as IntegrationMfaEnteredEvent).rawPayload, {
-          'mfaCode': '123456',
-        });
       });
 
       test('parses IntegrationOAuthStartedEvent', () {
@@ -419,19 +422,28 @@ void main() {
       test('parses ConnectionDeclinedEvent', () {
         final event = MeshEvent.fromJson({
           'type': 'connectionDeclined',
-          'payload': {'reason': 'user_cancelled'},
+          'payload': {
+            'integrationName': 'Coinbase',
+            'reason': 'user_cancelled',
+          },
         });
 
         expect(event, isA<ConnectionDeclinedEvent>());
+        final declined = event! as ConnectionDeclinedEvent;
+        expect(declined.integrationName, 'Coinbase');
+        expect(declined.reason, 'user_cancelled');
       });
 
       test('parses TransferDeclinedEvent', () {
         final event = MeshEvent.fromJson({
           'type': 'transferDeclined',
-          'payload': null,
+          'payload': {'integrationName': 'Coinbase', 'status': 'declined'},
         });
 
         expect(event, isA<TransferDeclinedEvent>());
+        final declined = event! as TransferDeclinedEvent;
+        expect(declined.integrationName, 'Coinbase');
+        expect(declined.status, 'declined');
       });
     });
 

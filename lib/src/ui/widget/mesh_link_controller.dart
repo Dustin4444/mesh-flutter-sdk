@@ -231,7 +231,9 @@ class MeshLinkController {
       return;
     }
 
-    logger.warning('Unexpected JS message: $json');
+    logger
+      ..warning('Unhandled JS message type: ${json['type']}')
+      ..fine('Unhandled JS message keys: ${json.keys.toList()}');
   }
 
   /// Returns true if a store URL launch was scheduled ([_isExternalAppOpened]

@@ -22,36 +22,32 @@ sealed class MeshEvent {
       final payload = json['payload'];
       final isPayloadMap = payload is Map<String, dynamic>;
 
+      // Fall back to the root JSON when there is no nested 'payload' key,
+      // so events are parsed correctly regardless of the message structure.
+      final p = isPayloadMap ? payload : json;
+
       return switch (json['type']) {
-        'integrationSelected' when isPayloadMap => IntegrationSelectedEvent(
-          type: payload['integrationType'] as String,
-          name: payload['integrationName'] as String,
-        ),
+        'integrationSelected' => IntegrationSelectedEvent.fromJson(p),
         'loaded' => const LoadedEvent(),
-        'integrationConnectionError' when isPayloadMap =>
-          IntegrationConnectionErrorEvent(
-            errorMessage: payload['errorMessage'] as String,
-          ),
+        'integrationConnectionError' => IntegrationConnectionErrorEvent(
+          errorMessage: p['errorMessage'] as String,
+          requestId: p['requestId'] as String?,
+        ),
         'credentialsEntered' => const CredentialsEnteredEvent(),
-        'transferStarted' => const TransferStartedEvent(),
-        'transferPreviewed' when isPayloadMap =>
-          TransferPreviewedEvent.fromJson(payload),
-        'transferPreviewError' when isPayloadMap => TransferPreviewErrorEvent(
-          errorMessage: payload['errorMessage'] as String,
+        'transferStarted' => TransferStartedEvent.fromJson(p),
+        'transferPreviewed' => TransferPreviewedEvent.fromJson(p),
+        'transferPreviewError' => TransferPreviewErrorEvent(
+          errorMessage: p['errorMessage'] as String,
+          requestId: p['requestId'] as String?,
         ),
-        'transferExecutionError' when isPayloadMap =>
-          TransferExecutionErrorEvent(
-            errorMessage: payload['errorMessage'] as String,
-          ),
-        'transferInitiated' when isPayloadMap =>
-          TransferInitiatedEvent.fromJson(payload),
-        'transferExecuted' when isPayloadMap => TransferExecutedEvent.fromJson(
-          payload,
+        'transferExecutionError' => TransferExecutionErrorEvent(
+          errorMessage: p['errorMessage'] as String,
+          requestId: p['requestId'] as String?,
         ),
-        'transferNoEligibleAssets' when isPayloadMap =>
-          TransferNoEligibleAssetsEvent.fromJson(payload),
-        'walletMessageSigned' when isPayloadMap =>
-          WalletMessageSignedEvent.fromJson(payload),
+        'transferInitiated' => TransferInitiatedEvent.fromJson(p),
+        'transferExecuted' => TransferExecutedEvent.fromJson(p),
+        'transferNoEligibleAssets' => TransferNoEligibleAssetsEvent.fromJson(p),
+        'walletMessageSigned' => WalletMessageSignedEvent.fromJson(p),
         'verifyDonePage' => const VerifyDonePageEvent(),
         'verifyWalletRejected' => const VerifyWalletRejectedEvent(),
         'legalTermsViewed' => const LegalTermsViewedEvent(),
@@ -59,40 +55,35 @@ sealed class MeshEvent {
         'fundingOptionsUpdated' => const FundingOptionsUpdatedEvent(),
         'fundingOptionsViewed' => const FundingOptionsViewedEvent(),
         'gasIncreaseWarning' => const GasIncreaseWarningEvent(),
-        'executeFundingStep' when isPayloadMap =>
-          ExecuteFundingStepEvent.fromJson(payload),
-        'integrationMfaEntered' => IntegrationMfaEnteredEvent(
-          rawPayload: payload,
-        ),
-        'integrationOAuthStarted' => IntegrationOAuthStartedEvent(
-          rawPayload: payload,
-        ),
+        'executeFundingStep' => ExecuteFundingStepEvent.fromJson(p),
+        'integrationMfaEntered' => const IntegrationMfaEnteredEvent(),
+        'integrationOAuthStarted' => const IntegrationOAuthStartedEvent(),
         'integrationAccountSelectionRequired' =>
-          IntegrationAccountSelectionRequiredEvent(rawPayload: payload),
+          const IntegrationAccountSelectionRequiredEvent(),
         'transferAssetSelected' => TransferAssetSelectedEvent(
-          rawPayload: payload,
+          symbol: p['symbol'] as String,
         ),
         'transferNetworkSelected' => TransferNetworkSelectedEvent(
-          rawPayload: payload,
+          id: p['id'] as String,
+          name: p['name'] as String,
         ),
-        'transferAmountEntered' => TransferAmountEnteredEvent(
-          rawPayload: payload,
-        ),
-        'transferMfaRequired' => TransferMfaRequiredEvent(rawPayload: payload),
-        'transferMfaEntered' => TransferMfaEnteredEvent(rawPayload: payload),
-        'transferKycRequired' => TransferKycRequiredEvent(rawPayload: payload),
-        'connectionDeclined' => ConnectionDeclinedEvent(rawPayload: payload),
+        'transferAmountEntered' => const TransferAmountEnteredEvent(),
+        'transferMfaRequired' => const TransferMfaRequiredEvent(),
+        'transferMfaEntered' => const TransferMfaEnteredEvent(),
+        'transferKycRequired' => const TransferKycRequiredEvent(),
+        'connectionDeclined' => ConnectionDeclinedEvent.fromJson(p),
         'transferConfigureError' => TransferConfigureErrorEvent(
-          rawPayload: payload,
+          errorMessage: p['errorMessage'] as String,
+          requestId: p['requestId'] as String?,
         ),
-        'connectionUnavailable' => ConnectionUnavailableEvent(
-          rawPayload: payload,
-        ),
-        'transferDeclined' => TransferDeclinedEvent(rawPayload: payload),
-        'linkTransferQRGenerated' when isPayloadMap =>
-          LinkTransferQrGeneratedEvent.fromJson(payload),
-        'methodSelected' when isPayloadMap =>
-          HomePageMethodSelectedEvent.fromJson(payload),
+        'connectionUnavailable' => ConnectionUnavailableEvent.fromJson(p),
+        'transferDeclined' => TransferDeclinedEvent.fromJson(p),
+        'linkTransferQRGenerated' => LinkTransferQrGeneratedEvent.fromJson(p),
+        'methodSelected' => HomePageMethodSelectedEvent.fromJson(p),
+        'integrationMfaRequired' => IntegrationMfaRequiredEvent.fromJson(p),
+        'defiWalletError' => DefiWalletErrorEvent.fromJson(p),
+        'paypalComplianceDeclined' => PaypalComplianceDeclinedEvent.fromJson(p),
+        'homePageLoaded' => const HomePageLoadedEvent(),
         _ => null,
       };
     } catch (e, s) {
@@ -102,15 +93,12 @@ sealed class MeshEvent {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Keep-as-is events (internal SDK / backward compat)
+// ---------------------------------------------------------------------------
+
 class LoadedEvent extends MeshEvent {
   const LoadedEvent();
-}
-
-class IntegrationSelectedEvent extends MeshEvent {
-  const IntegrationSelectedEvent({required this.type, required this.name});
-
-  final String type;
-  final String name;
 }
 
 class IntegrationConnectedEvent extends MeshEvent {
@@ -125,18 +113,89 @@ class TransferFinishedEvent extends MeshEvent {
   final TransferFinishedPayload payload;
 }
 
-class IntegrationConnectionErrorEvent extends MeshEvent {
-  const IntegrationConnectionErrorEvent({required this.errorMessage});
-
-  final String errorMessage;
-}
-
 class CredentialsEnteredEvent extends MeshEvent {
   const CredentialsEnteredEvent();
 }
 
+class VerifyDonePageEvent extends MeshEvent {
+  const VerifyDonePageEvent();
+}
+
+class VerifyWalletRejectedEvent extends MeshEvent {
+  const VerifyWalletRejectedEvent();
+}
+
+class LegalTermsViewedEvent extends MeshEvent {
+  const LegalTermsViewedEvent();
+}
+
+class SeeWhatHappenedClickedEvent extends MeshEvent {
+  const SeeWhatHappenedClickedEvent();
+}
+
+class FundingOptionsUpdatedEvent extends MeshEvent {
+  const FundingOptionsUpdatedEvent();
+}
+
+class FundingOptionsViewedEvent extends MeshEvent {
+  const FundingOptionsViewedEvent();
+}
+
+class GasIncreaseWarningEvent extends MeshEvent {
+  const GasIncreaseWarningEvent();
+}
+
+// ---------------------------------------------------------------------------
+// Fixed / updated existing event classes
+// ---------------------------------------------------------------------------
+
+class IntegrationSelectedEvent extends MeshEvent {
+  const IntegrationSelectedEvent({
+    required this.type,
+    required this.name,
+    this.nativeLink,
+    this.userSearched,
+  });
+
+  factory IntegrationSelectedEvent.fromJson(Map<String, dynamic> json) {
+    return IntegrationSelectedEvent(
+      type: json['integrationType'] as String,
+      name: json['integrationName'] as String,
+      nativeLink: json['nativeLink'] as String?,
+      userSearched: json['userSearched'] as bool?,
+    );
+  }
+
+  final String type;
+  final String name;
+  final String? nativeLink;
+  final bool? userSearched;
+}
+
+class IntegrationConnectionErrorEvent extends MeshEvent {
+  const IntegrationConnectionErrorEvent({
+    required this.errorMessage,
+    this.requestId,
+  });
+
+  final String errorMessage;
+  final String? requestId;
+}
+
 class TransferStartedEvent extends MeshEvent {
-  const TransferStartedEvent();
+  const TransferStartedEvent({
+    required this.integrationName,
+    this.integrationType,
+  });
+
+  factory TransferStartedEvent.fromJson(Map<String, dynamic> json) =>
+      TransferStartedEvent(
+        integrationName: json['integrationName'] as String,
+        integrationType: json['integrationType'] as String?,
+      );
+
+  final String integrationName;
+  final String? integrationType;
 }
 
 class TransferPreviewedEvent extends MeshEvent {
@@ -149,6 +208,10 @@ class TransferPreviewedEvent extends MeshEvent {
     this.networkName,
     this.amountInFiat,
     this.estimatedNetworkGasFee,
+    this.fiatCurrency,
+    this.amountInUsd,
+    this.totalAmountInFiat,
+    this.totalAmountInUsd,
   });
 
   factory TransferPreviewedEvent.fromJson(Map<String, dynamic> json) {
@@ -157,7 +220,10 @@ class TransferPreviewedEvent extends MeshEvent {
     return TransferPreviewedEvent(
       amount: (json['amount'] as num?)?.toDouble(),
       symbol: json['symbol'] as String,
-      toAddress: json['toAddress'] as String,
+      toAddress:
+          (json['toAddress'] as String?) ??
+          (json['targetAddress'] as String?) ??
+          (throw const FormatException('Missing toAddress/targetAddress')),
       networkId: json['networkId'] as String,
       previewId: json['previewId'] as String,
       networkName: json['networkName'] as String?,
@@ -165,6 +231,10 @@ class TransferPreviewedEvent extends MeshEvent {
       estimatedNetworkGasFee: feeJson is Map<String, dynamic>
           ? NetworkFee.fromJson(feeJson)
           : null,
+      fiatCurrency: json['fiatCurrency'] as String?,
+      amountInUsd: (json['amountInUSD'] as num?)?.toDouble(),
+      totalAmountInFiat: (json['totalAmountInFiat'] as num?)?.toDouble(),
+      totalAmountInUsd: (json['totalAmountInUSD'] as num?)?.toDouble(),
     );
   }
 
@@ -176,18 +246,27 @@ class TransferPreviewedEvent extends MeshEvent {
   final String? networkName;
   final double? amountInFiat;
   final NetworkFee? estimatedNetworkGasFee;
+  final String? fiatCurrency;
+  final double? amountInUsd;
+  final double? totalAmountInFiat;
+  final double? totalAmountInUsd;
 }
 
 class TransferPreviewErrorEvent extends MeshEvent {
-  const TransferPreviewErrorEvent({required this.errorMessage});
+  const TransferPreviewErrorEvent({required this.errorMessage, this.requestId});
 
   final String errorMessage;
+  final String? requestId;
 }
 
 class TransferExecutionErrorEvent extends MeshEvent {
-  const TransferExecutionErrorEvent({required this.errorMessage});
+  const TransferExecutionErrorEvent({
+    required this.errorMessage,
+    this.requestId,
+  });
 
   final String errorMessage;
+  final String? requestId;
 }
 
 class TransferInitiatedEvent extends MeshEvent {
@@ -195,19 +274,25 @@ class TransferInitiatedEvent extends MeshEvent {
     required this.integrationName,
     required this.status,
     this.integrationType,
+    this.clientName,
   });
 
   factory TransferInitiatedEvent.fromJson(Map<String, dynamic> json) {
     return TransferInitiatedEvent(
-      integrationName: json['integrationName'] as String,
+      integrationName:
+          (json['integrationName'] as String?) ??
+          (json['brokerName'] as String?) ??
+          (throw const FormatException('Missing integrationName/brokerName')),
       status: json['status'] as String,
       integrationType: json['integrationType'] as String?,
+      clientName: json['clientName'] as String?,
     );
   }
 
   final String integrationName;
   final String status;
   final String? integrationType;
+  final String? clientName;
 }
 
 class TransferExecutedEvent extends MeshEvent {
@@ -219,6 +304,8 @@ class TransferExecutedEvent extends MeshEvent {
     required this.symbol,
     required this.amount,
     required this.networkId,
+    this.userId,
+    this.clientTransactionId,
   });
 
   factory TransferExecutedEvent.fromJson(Map<String, dynamic> json) {
@@ -230,6 +317,8 @@ class TransferExecutedEvent extends MeshEvent {
       symbol: json['symbol'] as String,
       amount: (json['amount'] as num).toDouble(),
       networkId: json['networkId'] as String,
+      userId: json['userId'] as String?,
+      clientTransactionId: json['clientTransactionId'] as String?,
     );
   }
 
@@ -240,6 +329,8 @@ class TransferExecutedEvent extends MeshEvent {
   final String symbol;
   final double amount;
   final String networkId;
+  final String? userId;
+  final String? clientTransactionId;
 }
 
 class TransferNoEligibleAssetsEvent extends MeshEvent {
@@ -279,6 +370,7 @@ class WalletMessageSignedEvent extends MeshEvent {
     required this.address,
     required this.timeStamp,
     required this.isVerified,
+    this.verifiedAddresses,
   });
 
   factory WalletMessageSignedEvent.fromJson(Map<String, dynamic> json) {
@@ -288,6 +380,8 @@ class WalletMessageSignedEvent extends MeshEvent {
       address: json['address'] as String,
       timeStamp: json['timeStamp'] as int,
       isVerified: json['isVerified'] as bool,
+      verifiedAddresses: (json['verifiedAddresses'] as List<dynamic>?)
+          ?.cast<String>(),
     );
   }
 
@@ -296,34 +390,7 @@ class WalletMessageSignedEvent extends MeshEvent {
   final String address;
   final int timeStamp;
   final bool isVerified;
-}
-
-class VerifyDonePageEvent extends MeshEvent {
-  const VerifyDonePageEvent();
-}
-
-class VerifyWalletRejectedEvent extends MeshEvent {
-  const VerifyWalletRejectedEvent();
-}
-
-class LegalTermsViewedEvent extends MeshEvent {
-  const LegalTermsViewedEvent();
-}
-
-class SeeWhatHappenedClickedEvent extends MeshEvent {
-  const SeeWhatHappenedClickedEvent();
-}
-
-class FundingOptionsUpdatedEvent extends MeshEvent {
-  const FundingOptionsUpdatedEvent();
-}
-
-class FundingOptionsViewedEvent extends MeshEvent {
-  const FundingOptionsViewedEvent();
-}
-
-class GasIncreaseWarningEvent extends MeshEvent {
-  const GasIncreaseWarningEvent();
+  final List<String>? verifiedAddresses;
 }
 
 class ExecuteFundingStepEvent extends MeshEvent {
@@ -347,83 +414,146 @@ class ExecuteFundingStepEvent extends MeshEvent {
   final String? errorMessage;
 }
 
-class IntegrationMfaEnteredEvent extends MeshEvent {
-  const IntegrationMfaEnteredEvent({required this.rawPayload});
+// ---------------------------------------------------------------------------
+// Simple (no-payload) events
+// ---------------------------------------------------------------------------
 
-  final dynamic rawPayload;
+class IntegrationMfaEnteredEvent extends MeshEvent {
+  const IntegrationMfaEnteredEvent();
 }
 
 class IntegrationOAuthStartedEvent extends MeshEvent {
-  const IntegrationOAuthStartedEvent({required this.rawPayload});
-
-  final dynamic rawPayload;
+  const IntegrationOAuthStartedEvent();
 }
 
 class IntegrationAccountSelectionRequiredEvent extends MeshEvent {
-  const IntegrationAccountSelectionRequiredEvent({required this.rawPayload});
-
-  final dynamic rawPayload;
-}
-
-class TransferAssetSelectedEvent extends MeshEvent {
-  const TransferAssetSelectedEvent({required this.rawPayload});
-
-  final dynamic rawPayload;
-}
-
-class TransferNetworkSelectedEvent extends MeshEvent {
-  const TransferNetworkSelectedEvent({required this.rawPayload});
-
-  final dynamic rawPayload;
+  const IntegrationAccountSelectionRequiredEvent();
 }
 
 class TransferAmountEnteredEvent extends MeshEvent {
-  const TransferAmountEnteredEvent({required this.rawPayload});
-
-  final dynamic rawPayload;
+  const TransferAmountEnteredEvent();
 }
 
 class TransferMfaRequiredEvent extends MeshEvent {
-  const TransferMfaRequiredEvent({required this.rawPayload});
-
-  final dynamic rawPayload;
+  const TransferMfaRequiredEvent();
 }
 
 class TransferMfaEnteredEvent extends MeshEvent {
-  const TransferMfaEnteredEvent({required this.rawPayload});
-
-  final dynamic rawPayload;
+  const TransferMfaEnteredEvent();
 }
 
 class TransferKycRequiredEvent extends MeshEvent {
-  const TransferKycRequiredEvent({required this.rawPayload});
-
-  final dynamic rawPayload;
+  const TransferKycRequiredEvent();
 }
 
-class ConnectionDeclinedEvent extends MeshEvent {
-  const ConnectionDeclinedEvent({required this.rawPayload});
+// ---------------------------------------------------------------------------
+// Typed events
+// ---------------------------------------------------------------------------
 
-  final dynamic rawPayload;
+class TransferAssetSelectedEvent extends MeshEvent {
+  const TransferAssetSelectedEvent({required this.symbol});
+
+  final String symbol;
+}
+
+class TransferNetworkSelectedEvent extends MeshEvent {
+  const TransferNetworkSelectedEvent({required this.id, required this.name});
+
+  final String id;
+  final String name;
 }
 
 class TransferConfigureErrorEvent extends MeshEvent {
-  const TransferConfigureErrorEvent({required this.rawPayload});
+  const TransferConfigureErrorEvent({
+    required this.errorMessage,
+    this.requestId,
+  });
 
-  final dynamic rawPayload;
+  final String errorMessage;
+  final String? requestId;
 }
 
 class ConnectionUnavailableEvent extends MeshEvent {
-  const ConnectionUnavailableEvent({required this.rawPayload});
+  const ConnectionUnavailableEvent({
+    required this.integrationName,
+    required this.reason,
+    this.integrationType,
+  });
 
-  final dynamic rawPayload;
+  factory ConnectionUnavailableEvent.fromJson(Map<String, dynamic> json) =>
+      ConnectionUnavailableEvent(
+        integrationName: json['integrationName'] as String,
+        reason: json['reason'] as String,
+        integrationType: json['integrationType'] as String?,
+      );
+
+  final String integrationName;
+  final String reason;
+  final String? integrationType;
+}
+
+class ConnectionDeclinedEvent extends MeshEvent {
+  const ConnectionDeclinedEvent({
+    required this.integrationName,
+    required this.reason,
+    this.integrationType,
+    this.networkId,
+    this.toAddress,
+    this.errorMessage,
+  });
+
+  factory ConnectionDeclinedEvent.fromJson(Map<String, dynamic> json) =>
+      ConnectionDeclinedEvent(
+        integrationName: json['integrationName'] as String,
+        reason: json['reason'] as String,
+        integrationType: json['integrationType'] as String?,
+        networkId: json['networkId'] as String?,
+        toAddress: json['toAddress'] as String?,
+        errorMessage: json['errorMessage'] as String?,
+      );
+
+  final String integrationName;
+  final String reason;
+  final String? integrationType;
+  final String? networkId;
+  final String? toAddress;
+  final String? errorMessage;
 }
 
 class TransferDeclinedEvent extends MeshEvent {
-  const TransferDeclinedEvent({required this.rawPayload});
+  const TransferDeclinedEvent({
+    required this.integrationName,
+    required this.status,
+    this.integrationType,
+    this.toAddress,
+    this.token,
+    this.network,
+    this.amount,
+  });
 
-  final dynamic rawPayload;
+  factory TransferDeclinedEvent.fromJson(Map<String, dynamic> json) =>
+      TransferDeclinedEvent(
+        integrationName: json['integrationName'] as String,
+        status: json['status'] as String,
+        integrationType: json['integrationType'] as String?,
+        toAddress: json['toAddress'] as String?,
+        token: json['token'] as String?,
+        network: json['network'] as String?,
+        amount: (json['amount'] as num?)?.toDouble(),
+      );
+
+  final String integrationName;
+  final String status;
+  final String? integrationType;
+  final String? toAddress;
+  final String? token;
+  final String? network;
+  final double? amount;
 }
+
+// ---------------------------------------------------------------------------
+// Existing keep-as-is events
+// ---------------------------------------------------------------------------
 
 class LinkTransferQrGeneratedEvent extends MeshEvent {
   const LinkTransferQrGeneratedEvent({
@@ -478,4 +608,78 @@ class HomePageMethodSelectedEvent extends MeshEvent {
   }
 
   final HomePageMethod method;
+}
+
+// ---------------------------------------------------------------------------
+// New events added in this update
+// ---------------------------------------------------------------------------
+
+class IntegrationMfaRequiredEvent extends MeshEvent {
+  const IntegrationMfaRequiredEvent({
+    this.brokerType,
+    this.brokerName,
+    this.mfaType,
+  });
+
+  factory IntegrationMfaRequiredEvent.fromJson(Map<String, dynamic> json) =>
+      IntegrationMfaRequiredEvent(
+        brokerType: json['brokerType'] as String?,
+        brokerName: json['brokerName'] as String?,
+        mfaType: json['mfaType'] as String?,
+      );
+
+  final String? brokerType;
+  final String? brokerName;
+  final String? mfaType;
+}
+
+class DefiWalletErrorEvent extends MeshEvent {
+  const DefiWalletErrorEvent({
+    required this.integrationName,
+    required this.errorType,
+    required this.timeStamp,
+    this.requestedAddress,
+    this.connectedAddress,
+    this.requestedNetwork,
+    this.connectedNetwork,
+    this.connectUri,
+  });
+
+  factory DefiWalletErrorEvent.fromJson(Map<String, dynamic> json) {
+    final details = json['details'] as Map<String, dynamic>? ?? {};
+    return DefiWalletErrorEvent(
+      integrationName: json['integrationName'] as String,
+      errorType: json['errorType'] as String,
+      timeStamp: json['timeStamp'] as int,
+      requestedAddress: details['requestedAddress'] as String?,
+      connectedAddress: details['connectedAddress'] as String?,
+      requestedNetwork: details['requestedNetwork'] as String?,
+      connectedNetwork: details['connectedNetwork'] as String?,
+      connectUri: details['connectUri'] as String?,
+    );
+  }
+
+  final String integrationName;
+  final String errorType;
+  final int timeStamp;
+  final String? requestedAddress;
+  final String? connectedAddress;
+  final String? requestedNetwork;
+  final String? connectedNetwork;
+  final String? connectUri;
+}
+
+class PaypalComplianceDeclinedEvent extends MeshEvent {
+  const PaypalComplianceDeclinedEvent({required this.transferPreviewed});
+
+  factory PaypalComplianceDeclinedEvent.fromJson(Map<String, dynamic> json) =>
+      PaypalComplianceDeclinedEvent(
+        transferPreviewed: TransferPreviewedEvent.fromJson(json),
+      );
+
+  final TransferPreviewedEvent transferPreviewed;
+}
+
+class HomePageLoadedEvent extends MeshEvent {
+  const HomePageLoadedEvent();
 }
