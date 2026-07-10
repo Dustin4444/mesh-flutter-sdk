@@ -83,7 +83,13 @@ void main() {
       await tester.tap(find.byType(FilledButton));
       await tester.pumpAndSettle();
 
-      expect(webViewController.requestUri, Uri.parse('$rawUrl?lng=en'));
+      expect(webViewController.requestUri?.origin, Uri.parse(rawUrl).origin);
+      expect(webViewController.requestUri?.path, Uri.parse(rawUrl).path);
+      expect(
+        webViewController.requestUri?.queryParameters['platform'],
+        'flutter',
+      );
+      expect(webViewController.requestUri?.queryParameters['lng'], 'en');
     });
 
     testWidgets('Language param is used', (tester) async {
@@ -96,7 +102,13 @@ void main() {
       await tester.tap(find.byType(FilledButton));
       await tester.pumpAndSettle();
 
-      expect(webViewController.requestUri, Uri.parse('$rawUrl?lng=de'));
+      expect(webViewController.requestUri?.origin, Uri.parse(rawUrl).origin);
+      expect(webViewController.requestUri?.path, Uri.parse(rawUrl).path);
+      expect(
+        webViewController.requestUri?.queryParameters['platform'],
+        'flutter',
+      );
+      expect(webViewController.requestUri?.queryParameters['lng'], 'de');
     });
 
     testWidgets('language: "system" resolves to platform locale', (
@@ -114,6 +126,7 @@ void main() {
       final expectedLng =
           WidgetsBinding.instance.platformDispatcher.locale.languageCode;
       expect(webViewController.requestUri?.queryParameters['lng'], expectedLng);
+      expect(webViewController.requestUri?.origin, Uri.parse(rawUrl).origin);
       expect(webViewController.requestUri?.path, Uri.parse(rawUrl).path);
     });
   });
@@ -223,7 +236,13 @@ void main() {
       expect(webViewController.backgroundColor, Colors.transparent);
       expect(webViewController.javaScriptMode, JavaScriptMode.unrestricted);
       expect(webViewController.javaScriptChannel, 'JSBridge');
-      expect(webViewController.requestUri, Uri.parse('$rawUrl?lng=en'));
+      expect(webViewController.requestUri?.origin, Uri.parse(rawUrl).origin);
+      expect(webViewController.requestUri?.path, Uri.parse(rawUrl).path);
+      expect(
+        webViewController.requestUri?.queryParameters['platform'],
+        'flutter',
+      );
+      expect(webViewController.requestUri?.queryParameters['lng'], 'en');
 
       // Simulate the "loaded" event from JS to trigger _onLoaded()
       webViewController.simulateJsMessage('{"type":"loaded","payload":{}}');
@@ -436,7 +455,7 @@ void main() {
       await tester.pumpAndSettle();
 
       webViewController.simulateJsMessage(
-        '{"type":"transferStarted","payload":{}}',
+        '{"type":"transferStarted","payload":{"integrationName":"Coinbase"}}',
       );
       await tester.pumpAndSettle();
 

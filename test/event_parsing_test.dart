@@ -23,9 +23,28 @@ void main() {
       test('parses TransferStartedEvent', () {
         final event = MeshEvent.fromJson({
           'type': 'transferStarted',
-          'payload': <String, dynamic>{},
+          'payload': {
+            'integrationName': 'Coinbase',
+            'integrationType': 'exchange',
+          },
         });
         expect(event, isA<TransferStartedEvent>());
+        final started = event! as TransferStartedEvent;
+        expect(started.integrationName, 'Coinbase');
+        expect(started.integrationType, 'exchange');
+      });
+
+      test('parses TransferStartedEvent from a flat v2 message', () {
+        // v2 messages have no nested 'payload' key: fields live at the root.
+        final event = MeshEvent.fromJson({
+          'type': 'transferStarted',
+          'integrationName': 'Coinbase',
+          'integrationType': 'exchange',
+        });
+        expect(event, isA<TransferStartedEvent>());
+        final started = event! as TransferStartedEvent;
+        expect(started.integrationName, 'Coinbase');
+        expect(started.integrationType, 'exchange');
       });
 
       test('parses VerifyDonePageEvent', () {
@@ -163,6 +182,44 @@ void main() {
         expect(preview.networkName, isNull);
         expect(preview.amountInFiat, isNull);
         expect(preview.estimatedNetworkGasFee, isNull);
+      });
+
+      test('parses TransferPreviewedEvent cryptocurrencyFundingOptions', () {
+        final event = MeshEvent.fromJson({
+          'type': 'transferPreviewed',
+          'payload': {
+            'amount': 100,
+            'symbol': 'USDC',
+            'toAddress': '0xabc',
+            'networkId': 'ethereum',
+            'previewId': 'preview-789',
+            'cryptocurrencyFundingOptions': [
+              {
+                'cryptocurrencyFundingOptionType': 'card',
+                'name': 'Visa',
+                'usedAmountInFiat': 25.5,
+                'cryptocurrencySymbol': 'USDC',
+                'fee': {
+                  'amountInFiat': 1.5,
+                  'fiatSymbol': 'USD',
+                  'isInclusive': false,
+                },
+              },
+            ],
+          },
+        });
+
+        expect(event, isA<TransferPreviewedEvent>());
+        final preview = event! as TransferPreviewedEvent;
+        expect(preview.cryptocurrencyFundingOptions, hasLength(1));
+        final option = preview.cryptocurrencyFundingOptions!.first;
+        expect(option.cryptocurrencyFundingOptionType, 'card');
+        expect(option.name, 'Visa');
+        expect(option.usedAmountInFiat, 25.5);
+        expect(option.cryptocurrencySymbol, 'USDC');
+        expect(option.fee?.amountInFiat, 1.5);
+        expect(option.fee?.fiatSymbol, 'USD');
+        expect(option.fee?.isInclusive, false);
       });
 
       test('parses TransferPreviewErrorEvent', () {
@@ -419,19 +476,112 @@ void main() {
       test('parses ConnectionDeclinedEvent', () {
         final event = MeshEvent.fromJson({
           'type': 'connectionDeclined',
-          'payload': {'reason': 'user_cancelled'},
+          'payload': {
+            'integrationName': 'Coinbase',
+            'reason': 'user_cancelled',
+          },
         });
 
         expect(event, isA<ConnectionDeclinedEvent>());
+        final declined = event! as ConnectionDeclinedEvent;
+        expect(declined.integrationName, 'Coinbase');
+        expect(declined.reason, 'user_cancelled');
+        expect(declined.rawPayload, {
+          'integrationName': 'Coinbase',
+          'reason': 'user_cancelled',
+        });
       });
 
       test('parses TransferDeclinedEvent', () {
         final event = MeshEvent.fromJson({
           'type': 'transferDeclined',
-          'payload': null,
+          'payload': {'integrationName': 'Coinbase', 'status': 'declined'},
         });
 
         expect(event, isA<TransferDeclinedEvent>());
+        final declined = event! as TransferDeclinedEvent;
+        expect(declined.integrationName, 'Coinbase');
+        expect(declined.status, 'declined');
+        expect(declined.rawPayload, {
+          'integrationName': 'Coinbase',
+          'status': 'declined',
+        });
+      });
+    });
+
+    group('New v2 events', () {
+      test('parses ConnectionUnavailableEvent', () {
+        final event = MeshEvent.fromJson({
+          'type': 'connectionUnavailable',
+          'payload': {'integrationName': 'Coinbase', 'reason': 'maintenance'},
+        });
+
+        expect(event, isA<ConnectionUnavailableEvent>());
+        final unavailable = event! as ConnectionUnavailableEvent;
+        expect(unavailable.integrationName, 'Coinbase');
+        expect(unavailable.reason, 'maintenance');
+        expect(unavailable.rawPayload, {
+          'integrationName': 'Coinbase',
+          'reason': 'maintenance',
+        });
+      });
+
+      test('parses IntegrationMfaRequiredEvent (no payload)', () {
+        final event = MeshEvent.fromJson({
+          'type': 'integrationMfaRequired',
+          'payload': <String, dynamic>{},
+        });
+        expect(event, isA<IntegrationMfaRequiredEvent>());
+      });
+
+      test('parses HomePageLoadedEvent', () {
+        final event = MeshEvent.fromJson({
+          'type': 'homePageLoaded',
+          'payload': <String, dynamic>{},
+        });
+        expect(event, isA<HomePageLoadedEvent>());
+      });
+
+      test('parses DefiWalletErrorEvent with details', () {
+        final event = MeshEvent.fromJson({
+          'type': 'defiWalletError',
+          'payload': {
+            'integrationName': 'MetaMask',
+            'errorType': 'verifyMismatch',
+            'timeStamp': 1712345678,
+            'details': {
+              'requestedAddress': '0xrequested',
+              'connectedAddress': '0xconnected',
+              'requestedNetwork': 'ethereum',
+              'connectedNetwork': 'polygon',
+            },
+          },
+        });
+
+        expect(event, isA<DefiWalletErrorEvent>());
+        final error = event! as DefiWalletErrorEvent;
+        expect(error.integrationName, 'MetaMask');
+        expect(error.errorType, 'verifyMismatch');
+        expect(error.timeStamp, 1712345678);
+        expect(error.requestedAddress, '0xrequested');
+        expect(error.connectedAddress, '0xconnected');
+        expect(error.requestedNetwork, 'ethereum');
+        expect(error.connectedNetwork, 'polygon');
+      });
+
+      test('parses DefiWalletErrorEvent when timeStamp is a double', () {
+        final event = MeshEvent.fromJson({
+          'type': 'defiWalletError',
+          'payload': {
+            'integrationName': 'MetaMask',
+            'errorType': 'timeout',
+            'timeStamp': 1712345678.0,
+            'details': <String, dynamic>{},
+          },
+        });
+
+        expect(event, isA<DefiWalletErrorEvent>());
+        expect((event! as DefiWalletErrorEvent).timeStamp, 1712345678);
       });
     });
 

@@ -4,11 +4,13 @@ import 'package:mesh_sdk_flutter/src/model/mesh_configuration.dart';
 import 'package:mesh_sdk_flutter/src/util/language.dart';
 
 /// Builds the full link [Uri] from [configuration] (including its link token),
-/// with query parameters for language, theme, and fiat currency.
+/// with query parameters for platform, language, theme, and fiat currency.
 Uri buildLinkUri(MeshConfiguration configuration) {
   final url = String.fromCharCodes(base64Decode(configuration.linkToken));
   final parsedUri = Uri.parse(url);
   final queryParams = {...parsedUri.queryParameters};
+
+  queryParams['platform'] = 'flutter';
 
   final lng = resolveLanguage(configuration.language);
   queryParams['lng'] = lng;

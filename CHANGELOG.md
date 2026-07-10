@@ -1,3 +1,12 @@
+## 1.1.8
+
+### Added
+- Enriched existing SDK events with additional optional fields from the Link event contract.
+- Send `platform=flutter` query parameter to the Link UI.
+
+### Fixed
+- Events with sparse payloads are no longer dropped.
+
 ## 1.1.7
 
 ### Removed
