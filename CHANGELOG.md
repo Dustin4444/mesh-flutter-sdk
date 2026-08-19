@@ -1,3 +1,8 @@
+## 1.1.9
+
+### Fixed
+- MetaMask now opens from the wallet selection screen. Its in-wallet browser deep link was not recognised, so the WebView blocked it instead of launching the app.
+
 ## 1.1.8
 
 ### Added

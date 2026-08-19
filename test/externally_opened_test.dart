@@ -53,6 +53,17 @@ void main() {
       );
     });
 
+    // The real value the backend serves for MetaMask's in-wallet browser, so a
+    // change to the catalog shows up here.
+    test('Returns true for the MetaMask in-wallet browser link', () {
+      expect(
+        isExternallyOpenedOrigin(
+          'https://link.metamask.io/dapp/link.meshconnect.com/dapp/eyJhIjoiYiJ9',
+        ),
+        isTrue,
+      );
+    });
+
     test('Returns false for about:blank', () {
       expect(isExternallyOpenedOrigin('about:blank'), isFalse);
     });
@@ -75,6 +86,10 @@ void main() {
       );
       expect(
         isExternallyOpenedOrigin('https://link.trustwallet.com.evil.com/wc'),
+        isFalse,
+      );
+      expect(
+        isExternallyOpenedOrigin('https://link.metamask.io.evil.com/dapp/x'),
         isFalse,
       );
     });

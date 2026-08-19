@@ -124,7 +124,8 @@ const _externallyOpenedOrigins = [
   'https://go.rabby.io/mobile',     // Rabby
   'https://app.binance.com',        // Binance Connect
   'https://web3.okx.com',           // Okx
-  'https://metamask.app.link',      // MetaMask
+  'https://metamask.app.link',      // MetaMask (WalletConnect)
+  'https://link.metamask.io',       // MetaMask (in-wallet browser)
   'https://phantom.app',            // Phantom
   'https://solflare.com',           // Solflare
   'https://coinbase.com',           // Coinbase
