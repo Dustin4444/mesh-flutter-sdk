@@ -149,6 +149,15 @@ void main() {
       test('exodus', () {
         expect(isAppUrlChange('exodus://some/path'), isTrue);
       });
+
+      // First allowlisted scheme containing a hyphen, so this also checks that
+      // Uri.parse keeps the hyphen when it extracts the scheme.
+      test('robinhood-wallet WalletConnect deep link', () {
+        expect(
+          isAppUrlChange('robinhood-wallet://wc?uri=wc%3Atopic%402'),
+          isTrue,
+        );
+      });
     });
 
     group('hosted-QR deposit / pay deep links', () {
