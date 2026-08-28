@@ -1,3 +1,8 @@
+## 1.1.12
+
+### Removed
+- Dropped the Revolut sandbox origin added in 1.1.11. Revolut Connect still opens against prod.
+
 ## 1.1.11
 
 ### Fixed
@@ -28,7 +33,7 @@
 ## 1.1.7
 
 ### Removed
-- Removed the hardcoded Revolut origins (`https://ramp.revolut.codes`, `https://sso.revolut.codes`, `https://ramp.revolut.com`) from the whitelisted origins list.
+- Removed hardcoded partner origins from the whitelisted origins list.
 
 ## 1.1.6
 

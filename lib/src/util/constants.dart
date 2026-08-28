@@ -139,13 +139,10 @@ const _externallyOpenedOrigins = [
   'https://krak.app',              // Kraken Pay
   'https://js.crypto.com',         // Crypto.com Pay
   'https://cash.app',              // Cash App Pay
-  // Revolut Connect. The hosted on-ramp checkout, reached by handing the user
-  // out of the WebView; Revolut's own redirect to sso.revolut.com for sign-in
-  // then happens in the browser, so only this first host needs listing.
-  // `.codes` is Revolut's dev environment, wired to Mesh dev, and is listed for
-  // the same reason the Coinbase sandbox origin above is.
+  // Revolut Connect. Prod only: Revolut asked us not to carry their
+  // dev/sandbox host in SDK source, so the handoff works against prod Revolut
+  // but not against their sandbox.
   'https://ramp.revolut.com',
-  'https://ramp.revolut.codes',
 ];
 // dart format on
 
